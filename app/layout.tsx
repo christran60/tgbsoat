@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Domine } from "next/font/google";
+import { Domine } from "next/font/google";
 import "./globals.css";
 
 const domine = Domine({

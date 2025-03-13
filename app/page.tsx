@@ -5,7 +5,6 @@ import ResetIcon from "@/public/assets/reset";
 import EditIcon from "@/public/assets/edit";
 import CheckmarkIcon from "@/public/assets/checkmark";
 import ShareIcon from "@/public/assets/share";
-import { Share } from "next/font/google";
 type Meal = {
   price: string;
   name: string;
@@ -54,7 +53,7 @@ export default function Home() {
     // Whenever meals, tax, tip, or tipType change, update the URL
     const newUrl = `${window.location.pathname}?s=${encodeStateToUrl()}`;
     window.history.replaceState({}, "", newUrl);
-  }, [meals, tax, tip, tipType]);
+  }, [meals, tax, tip, tipType, encodeStateToUrl]);
 
   const handleMealChange = (
     index: number,

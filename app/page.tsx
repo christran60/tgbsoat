@@ -1,27 +1,72 @@
 "use client";
 
-import { useState } from "react";
-
+import { useState, useEffect } from "react";
+import ResetIcon from "@/public/assets/reset";
+import EditIcon from "@/public/assets/edit";
+import CheckmarkIcon from "@/public/assets/checkmark";
+import ShareIcon from "@/public/assets/share";
+import { Share } from "next/font/google";
 type Meal = {
   price: string;
+  name: string;
 };
 
 export default function Home() {
-  const [meals, setMeals] = useState<Meal[]>([{ price: "" }]);
+  const [meals, setMeals] = useState<Meal[]>([{ price: "", name: "" }]);
   const [tax, setTax] = useState(10);
   const [tip, setTip] = useState(15);
   const [tipType, setTipType] = useState<"percentage" | "cash">("percentage");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false); // state to track edit mode
-
-  const handleMealChange = (index: number, value: string) => {
-    const updatedMeals = [...meals];
-    updatedMeals[index].price = value;
-    setMeals(updatedMeals);
+  // Function to encode state into a Base64 URL parameter
+  const encodeStateToUrl = () => {
+    const state = {
+      meals,
+      tax,
+      tip,
+      tipType,
+    };
+    const jsonState = JSON.stringify(state);
+    const base64State = btoa(jsonState); // Convert to Base64
+    return base64State;
   };
 
+  // Function to decode state from a Base64 URL parameter
+  const decodeStateFromUrl = () => {
+    const params = new URLSearchParams(window.location.search);
+    const encodedState = params.get("s"); // 's' is the shortened param name for the state
+    if (encodedState) {
+      const decodedState = atob(encodedState); // Decode Base64
+      const state = JSON.parse(decodedState);
+      setMeals(state.meals);
+      setTax(state.tax);
+      setTip(state.tip);
+      setTipType(state.tipType);
+    }
+  };
+
+  useEffect(() => {
+    // Decode the state from the URL when the component mounts
+    decodeStateFromUrl();
+  }, []);
+
+  useEffect(() => {
+    // Whenever meals, tax, tip, or tipType change, update the URL
+    const newUrl = `${window.location.pathname}?s=${encodeStateToUrl()}`;
+    window.history.replaceState({}, "", newUrl);
+  }, [meals, tax, tip, tipType]);
+
+  const handleMealChange = (
+    index: number,
+    field: "price" | "name",
+    value: string
+  ) => {
+    const updatedMeals = [...meals];
+    updatedMeals[index][field] = value;
+    setMeals(updatedMeals);
+  };
   const addMeal = () => {
-    setMeals([...meals, { price: "" }]);
+    setMeals([...meals, { price: "", name: "" }]);
   };
 
   const deleteMeal = (index: number) => {
@@ -54,35 +99,67 @@ export default function Home() {
   });
 
   const handleReset = () => {
-    setMeals([{ price: "" }]);
+    setMeals([{ price: "", name: "" }]);
     setTax(10);
     setTip(15);
     setTipType("percentage");
     setIsModalOpen(false);
   };
 
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: document.title,
+          text: "Check out this page!",
+          url: window.location.href,
+        });
+        console.log("Share successful");
+      } catch (error) {
+        console.error("Share failed", error);
+      }
+    } else {
+      // Fallback for browsers that don't support the Share API
+      const url = window.location.href;
+      navigator.clipboard
+        .writeText(url)
+        .then(() => {
+          alert("Link copied to clipboard!");
+        })
+        .catch((error) => {
+          console.error("Failed to copy the link", error);
+        });
+    }
+  };
+
   return (
-    <div className="min-h-screen flex flex-col items-center p-4 sm:p-6 bg-amber-100 text-black">
-      <h1 className="text-xl sm:text-2xl font-bold mb-4 text-center">
-        the greatest bill splitter of all time v1 alpha version if you want
-        anything or see anything break please hit me
-      </h1>
+    <div className="min-h-screen flex flex-col items-center p-8 sm:p-12 bg-slate-100 text-black font-domine">
+      <h1 className="text-2xl mb-4 text-center">sixty°tgbsoat</h1>
       <div className="w-full max-w-sm space-y-3 relative">
-        <div className="mb-20">
+        <div className="mb-4 flex justify-between">
           {/* Reset Button at top left */}
           <button
             onClick={() => setIsModalOpen(true)}
-            className="absolute top-4 left-4 w-16 h-10 flex items-center justify-center bg-blue-300 rounded-full font-semibold hover:bg-blue-400 focus:outline-none text-white"
+            className=" top-4 w-16 h-10 flex items-center justify-center font-semibold  focus:outline-none"
           >
-            Reset
+            <ResetIcon className="w-6 h-6" />
           </button>
-
+          <button
+            onClick={handleShare}
+            className=" top-4 w-16 h-10 flex items-center justify-center font-semibold  focus:outline-none"
+          >
+            <ShareIcon className="w-6 h-6" />
+          </button>
           {/* Edit Button at top right */}
           <button
             onClick={() => setIsEditing((prev) => !prev)}
-            className="absolute top-4 right-4 w-16 h-10 flex items-center justify-center bg-purple-300 rounded-full font-semibold hover:bg-purple-400  text-white"
+            className=" top-4 w-16 h-10 flex items-center justify-center font-semibold"
           >
-            {isEditing ? "Done" : "Edit"}
+            {isEditing ? (
+              <CheckmarkIcon className="w-6 h-6" />
+            ) : (
+              <EditIcon className="w-6 h-6" />
+            )}
           </button>
         </div>
 
@@ -102,29 +179,48 @@ export default function Home() {
           return (
             <div
               key={index}
-              className="p-4 border rounded-lg shadow-sm bg-opacity-20 flex justify-between relative"
+              className="flex justify-center flex-row items-center"
             >
-              <div className="w-full">
-                <input
-                  type="number"
-                  placeholder="Meal price"
-                  value={meal.price}
-                  onChange={(e) => handleMealChange(index, e.target.value)}
-                  className="w-full p-1 border rounded focus:outline-none focus:ring-2 focus:ring-white bg-transparent text-black"
-                />
-                <p className="text-sm">meal: ${price.toFixed(2)}</p>
-                <p className="text-sm">
-                  tax ({tax}%): ${taxAmount.toFixed(2)}
-                </p>
-                <p className="text-sm">
-                  tip ({tipType === "percentage" ? `${tip}%` : `$${tip}`}) : $
-                  {mealTipAmount.toFixed(2)}
-                </p>
-                <p className="font-bold text-sm">
-                  total: ${totalMealCost.toFixed(2)}
-                </p>
+              <div>
+                {/* Render name input only when editing */}
+                {isEditing ? (
+                  <input
+                    type="text"
+                    placeholder="Meal name"
+                    value={meal.name}
+                    onChange={(e) =>
+                      handleMealChange(index, "name", e.target.value)
+                    }
+                    className="w-full p-1 border rounded focus:outline-none focus:ring-2 focus:ring-white bg-transparent"
+                  />
+                ) : (
+                  <p className="text-sm">{meal.name || `Meal #${index + 1}`}</p>
+                )}
+                <div className="p-4 rounded-xl shadow-lg bg-opacity-20 flex justify-between relative">
+                  <div className="w-full">
+                    <input
+                      type="number"
+                      placeholder="Meal price"
+                      value={meal.price}
+                      onChange={(e) =>
+                        handleMealChange(index, "price", e.target.value)
+                      }
+                      className="w-full p-1 border rounded focus:outline-none focus:ring-2 focus:ring-white bg-transparent"
+                    />
+                    <p className="text-sm">meal: ${price.toFixed(2)}</p>
+                    <p className="text-sm">
+                      tax ({tax}%): ${taxAmount.toFixed(2)}
+                    </p>
+                    <p className="text-sm">
+                      tip ({tipType === "percentage" ? `${tip}%` : `$${tip}`}) :
+                      ${mealTipAmount.toFixed(2)}
+                    </p>
+                    <p className="font-bold text-sm">
+                      total: ${totalMealCost.toFixed(2)}
+                    </p>
+                  </div>
+                </div>
               </div>
-
               {/* Subtract button (same style as Add) */}
               {isEditing && meals.length > 1 && (
                 <button
@@ -140,7 +236,7 @@ export default function Home() {
 
         <button
           onClick={addMeal}
-          className="w-10 h-10 flex items-center justify-center bg-green-500 rounded-full font-semibold hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-700 mx-auto text-white"
+          className="w-10 h-10 flex items-center justify-center bg-green-400 rounded-full font-semibold hover:bg-green-500  mx-auto text-white"
         >
           +
         </button>
@@ -165,23 +261,6 @@ export default function Home() {
         </div>
 
         <div className="flex items-center space-x-2">
-          <label htmlFor="tipType" className="w-20 text-sm font-semibold">
-            tip type
-          </label>
-          <select
-            id="tipType"
-            value={tipType}
-            onChange={(e) =>
-              setTipType(e.target.value as "percentage" | "cash")
-            }
-            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-white bg-transparent"
-          >
-            <option value="percentage">Percentage</option>
-            <option value="cash">Cash Value</option>
-          </select>
-        </div>
-
-        <div className="flex items-center space-x-2">
           <label htmlFor="tip" className="w-20 text-sm font-semibold">
             tip {tipType === "percentage" ? "%" : "$"}
           </label>
@@ -195,12 +274,27 @@ export default function Home() {
                 value === "" || parseFloat(value) < 0 ? 0 : parseFloat(value)
               );
             }}
-            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-black bg-transparent"
+            className="w-1/2 p-2 border rounded  bg-transparent"
             placeholder={tipType === "percentage" ? "Tip %" : "Cash Value"}
           />
+          <select
+            id="tipType"
+            value={tipType}
+            onChange={(e) =>
+              setTipType(e.target.value as "percentage" | "cash")
+            }
+            className=" p-2 border rounded focus:outline-none focus:ring-2 focus:ring-white bg-transparent w-1/2"
+          >
+            <option value="percentage">percentage</option>
+            <option value="cash">cash value</option>
+          </select>
         </div>
 
-        <div className="mt-4 p-4 border rounded-lg shadow-sm bg-opacity-20">
+        <div className="mt-4 p-4 rounded-xl shadow-md bg-opacity-20">
+          <div className="flex flex-col w-full text-center mb-8">
+            <h1 className="text-xl">grand total</h1>
+            <h2 className="text-2xl">${totalWithTaxAndTip.toFixed(2)}</h2>
+          </div>
           <p>
             <strong>total before tax:</strong> ${totalBeforeTax.toFixed(2)}
           </p>
@@ -209,9 +303,6 @@ export default function Home() {
           </p>
           <p>
             <strong>total tip:</strong> ${totalTipAmount.toFixed(2)}
-          </p>
-          <p className="font-bold text-lg">
-            grand total: ${totalWithTaxAndTip.toFixed(2)}
           </p>
           <p>
             have you ever struggled to properly split the bill but never wanted
@@ -228,15 +319,15 @@ export default function Home() {
             <div className="mt-4 flex space-x-4">
               <button
                 onClick={handleReset}
-                className="px-4 py-2 bg-green-300 text-white rounded hover:bg-green-400"
+                className="px-4 py-2 bg-green-400 text-white rounded hover:bg-green-500"
               >
-                yessss
+                <CheckmarkIcon />
               </button>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 bg-pink-300 text-white rounded hover:bg-pink-400"
+                className="px-4 py-2 bg-red-300 text-white rounded hover:bg-red-400"
               >
-                nooooo
+                X
               </button>
             </div>
           </div>

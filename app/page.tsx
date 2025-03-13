@@ -110,7 +110,6 @@ export default function Home() {
       try {
         await navigator.share({
           title: document.title,
-          text: "Check out this page!",
           url: window.location.href,
         });
         console.log("Share successful");

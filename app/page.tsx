@@ -5,13 +5,13 @@ import ResetIcon from "@/public/assets/reset";
 import EditIcon from "@/public/assets/edit";
 import CheckmarkIcon from "@/public/assets/checkmark";
 import ShareIcon from "@/public/assets/share";
-type Meal = {
+type item = {
   price: string;
   name: string;
 };
 
 export default function Home() {
-  const [meals, setMeals] = useState<Meal[]>([{ price: "", name: "" }]);
+  const [items, setitems] = useState<item[]>([{ price: "", name: "" }]);
   const [tax, setTax] = useState(10);
   const [tip, setTip] = useState(15);
   const [tipType, setTipType] = useState<"percentage" | "cash">("percentage");
@@ -20,7 +20,7 @@ export default function Home() {
   // Function to encode state into a Base64 URL parameter
   const encodeStateToUrl = () => {
     const state = {
-      meals,
+      items,
       tax,
       tip,
       tipType,
@@ -37,7 +37,7 @@ export default function Home() {
     if (encodedState) {
       const decodedState = atob(encodedState); // Decode Base64
       const state = JSON.parse(decodedState);
-      setMeals(state.meals);
+      setitems(state.items);
       setTax(state.tax);
       setTip(state.tip);
       setTipType(state.tipType);
@@ -50,33 +50,33 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    // Whenever meals, tax, tip, or tipType change, update the URL
+    // Whenever items, tax, tip, or tipType change, update the URL
     const newUrl = `${window.location.pathname}?s=${encodeStateToUrl()}`;
     window.history.replaceState({}, "", newUrl);
-  }, [meals, tax, tip, tipType, encodeStateToUrl]);
+  }, [items, tax, tip, tipType, encodeStateToUrl]);
 
-  const handleMealChange = (
+  const handleitemChange = (
     index: number,
     field: "price" | "name",
     value: string
   ) => {
-    const updatedMeals = [...meals];
-    updatedMeals[index][field] = value;
-    setMeals(updatedMeals);
+    const updateditems = [...items];
+    updateditems[index][field] = value;
+    setitems(updateditems);
   };
-  const addMeal = () => {
-    setMeals([...meals, { price: "", name: "" }]);
+  const additem = () => {
+    setitems([...items, { price: "", name: "" }]);
   };
 
-  const deleteMeal = (index: number) => {
-    if (meals.length > 1) {
-      const updatedMeals = meals.filter((_, idx) => idx !== index);
-      setMeals(updatedMeals);
+  const deleteitem = (index: number) => {
+    if (items.length > 1) {
+      const updateditems = items.filter((_, idx) => idx !== index);
+      setitems(updateditems);
     }
   };
 
-  const totalBeforeTax = meals.reduce(
-    (acc, meal) => acc + (parseFloat(meal.price) || 0),
+  const totalBeforeTax = items.reduce(
+    (acc, item) => acc + (parseFloat(item.price) || 0),
     0
   );
 
@@ -91,14 +91,14 @@ export default function Home() {
 
   const totalWithTaxAndTip = totalBeforeTax + totalTaxAmount + totalTipAmount;
 
-  const mealTips = meals.map((meal) => {
-    const mealPrice = parseFloat(meal.price) || 0;
-    const mealPercentage = mealPrice / totalBeforeTax;
-    return mealPercentage * totalTipAmount;
+  const itemTips = items.map((item) => {
+    const itemPrice = parseFloat(item.price) || 0;
+    const itemPercentage = itemPrice / totalBeforeTax;
+    return itemPercentage * totalTipAmount;
   });
 
   const handleReset = () => {
-    setMeals([{ price: "", name: "" }]);
+    setitems([{ price: "", name: "" }]);
     setTax(10);
     setTip(15);
     setTipType("percentage");
@@ -161,18 +161,18 @@ export default function Home() {
           </button>
         </div>
 
-        {meals.map((meal, index) => {
-          const price = parseFloat(meal.price) || 0;
+        {items.map((item, index) => {
+          const price = parseFloat(item.price) || 0;
           const taxAmount = (price * (tax || 0)) / 100;
-          let mealTipAmount = 0;
+          let itemTipAmount = 0;
 
           if (tipType === "percentage") {
-            mealTipAmount = (price * (tip || 0)) / 100;
+            itemTipAmount = (price * (tip || 0)) / 100;
           } else if (tipType === "cash") {
-            mealTipAmount = mealTips[index] || 0;
+            itemTipAmount = itemTips[index] || 0;
           }
 
-          const totalMealCost = price + taxAmount + mealTipAmount;
+          const totalitemCost = price + taxAmount + itemTipAmount;
 
           return (
             <div
@@ -184,45 +184,45 @@ export default function Home() {
                 {isEditing ? (
                   <input
                     type="text"
-                    placeholder="Meal name"
-                    value={meal.name}
+                    placeholder="item name"
+                    value={item.name}
                     onChange={(e) =>
-                      handleMealChange(index, "name", e.target.value)
+                      handleitemChange(index, "name", e.target.value)
                     }
                     className="w-full p-1 border rounded focus:outline-none focus:ring-2 focus:ring-white bg-transparent"
                   />
                 ) : (
-                  <p className="text-sm">{meal.name || `Meal #${index + 1}`}</p>
+                  <p className="text-sm">{item.name || `item #${index + 1}`}</p>
                 )}
                 <div className="p-4 rounded-xl shadow-lg bg-opacity-20 flex justify-between relative">
                   <div className="w-full">
                     <input
                       type="number"
-                      placeholder="Meal price"
-                      value={meal.price}
+                      placeholder="item price"
+                      value={item.price}
                       onChange={(e) =>
-                        handleMealChange(index, "price", e.target.value)
+                        handleitemChange(index, "price", e.target.value)
                       }
                       className="w-full p-1 border rounded focus:outline-none focus:ring-2 focus:ring-white bg-transparent"
                     />
-                    <p className="text-sm">meal: ${price.toFixed(2)}</p>
+                    <p className="text-sm">item: ${price.toFixed(2)}</p>
                     <p className="text-sm">
                       tax ({tax}%): ${taxAmount.toFixed(2)}
                     </p>
                     <p className="text-sm">
                       tip ({tipType === "percentage" ? `${tip}%` : `$${tip}`}) :
-                      ${mealTipAmount.toFixed(2)}
+                      ${itemTipAmount.toFixed(2)}
                     </p>
                     <p className="font-bold text-sm">
-                      total: ${totalMealCost.toFixed(2)}
+                      total: ${totalitemCost.toFixed(2)}
                     </p>
                   </div>
                 </div>
               </div>
               {/* Subtract button (same style as Add) */}
-              {isEditing && meals.length > 1 && (
+              {isEditing && items.length > 1 && (
                 <button
-                  onClick={() => deleteMeal(index)}
+                  onClick={() => deleteitem(index)}
                   className="w-10 h-10 flex items-center justify-center bg-red-300 rounded-full font-semibold hover:bg-red-400 focus:outline-none  text-white ml-2"
                 >
                   -
@@ -233,7 +233,7 @@ export default function Home() {
         })}
 
         <button
-          onClick={addMeal}
+          onClick={additem}
           className="w-10 h-10 flex items-center justify-center bg-green-400 rounded-full font-semibold hover:bg-green-500  mx-auto text-white"
         >
           +
